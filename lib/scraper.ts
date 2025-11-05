@@ -17,7 +17,6 @@ export class NewsScraper {
       args: isProduction 
         ? chromium.args 
         : ['--no-sandbox', '--disable-setuid-sandbox'],
-      defaultViewport: chromium.defaultViewport,
       executablePath: isProduction 
         ? await chromium.executablePath() 
         : undefined,
