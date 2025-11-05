@@ -1,5 +1,9 @@
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-extra';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import chromium from '@sparticuz/chromium';
 import { Source, Article } from '@/types';
+
+puppeteer.use(StealthPlugin());
 
 export class NewsScraper {
   private browser: any = null;
@@ -7,9 +11,17 @@ export class NewsScraper {
   public errors: any[] = [];
 
   async initialize() {
+    const isProduction = process.env.VERCEL_ENV === 'production';
+
     this.browser = await puppeteer.launch({
+      args: isProduction 
+        ? chromium.args 
+        : ['--no-sandbox', '--disable-setuid-sandbox'],
+      defaultViewport: chromium.defaultViewport,
+      executablePath: isProduction 
+        ? await chromium.executablePath() 
+        : undefined,
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
   }
 
