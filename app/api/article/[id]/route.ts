@@ -5,12 +5,13 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const db = new Database();
 
   try {
-    const articleId = decodeURIComponent(params.id);
+    const { id } = await params; // Await the params
+    const articleId = decodeURIComponent(id);
     const result = await db.getArticles();
     const article = result.articles.find((a) => a.link === articleId);
 
