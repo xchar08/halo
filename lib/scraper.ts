@@ -1,9 +1,6 @@
-import puppeteer from 'puppeteer-extra';
-import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import puppeteer from 'puppeteer';
 import chromium from '@sparticuz/chromium';
 import { Source, Article } from '@/types';
-
-puppeteer.use(StealthPlugin());
 
 export class NewsScraper {
   private browser: any = null;
