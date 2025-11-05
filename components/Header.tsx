@@ -52,6 +52,16 @@ export default function Header() {
               Categories
             </Button>
           </Link>
+          <Link href="/reports">
+            <Button
+              variant={isActive('/reports') ? 'solid' : 'ghost'}
+              colorScheme={isActive('/reports') ? 'red' : 'gray'}
+              fontSize="sm"
+              fontWeight="medium"
+            >
+              Reports
+            </Button>
+          </Link>
         </HStack>
       </Flex>
     </Box>
