@@ -2,9 +2,35 @@ import axios from 'axios';
 import { load } from 'cheerio';
 import { Source, Article } from '@/types';
 
+const CATEGORY_KEYWORDS: Record<string, string[]> = {
+  'AI/ML': ['ai', 'machine learning', 'neural', 'algorithm', 'deep learning', 'model', 'training', 'inference', 'transformer'],
+  'LLM/AGI': ['language model', 'llm', 'gpt', 'bert', 'llama', 'agi', 'reasoning', 'rlhf', 'prompt', 'fine-tune'],
+  'Robotics': ['robot', 'robotic', 'manipulator', 'motion', 'control', 'autonomous vehicle', 'drone', 'rover', 'actuator'],
+  'Physics': ['quantum', 'particle', 'physics', 'electron', 'photon', 'relativity', 'field', 'collision', 'energy'],
+  'Biotech': ['gene', 'genetic', 'protein', 'biology', 'biotech', 'crispr', 'dna', 'rna', 'cell', 'organism'],
+  'Safety': ['safety', 'alignment', 'robust', 'security', 'adversarial', 'verification', 'interpretability', 'explainability', 'fairness'],
+  'Medical': ['medical', 'healthcare', 'diagnosis', 'treatment', 'drug', 'clinical', 'patient', 'disease', 'medicine', 'hospital'],
+};
+
 export class NewsScraper {
   public articles: Article[] = [];
   public errors: any[] = [];
+
+  private extractCategory(source: Source, title: string, description: string): string {
+    const text = `${title} ${description}`.toLowerCase();
+    
+    // Check keywords
+    for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+      for (const keyword of keywords) {
+        if (text.includes(keyword)) {
+          return category;
+        }
+      }
+    }
+
+    // Fallback to source category
+    return source.category || 'AI/ML';
+  }
 
   async scrapeSource(source: Source): Promise<Article[]> {
     try {
@@ -40,6 +66,9 @@ export class NewsScraper {
               ? link 
               : new URL(link, source.url).toString();
 
+            // Auto-assign category based on content
+            const autoCategory = this.extractCategory(source, title, description);
+
             articles.push({
               title,
               description,
@@ -50,7 +79,7 @@ export class NewsScraper {
               sourceName: source.name,
               institution: source.institution,
               region: source.region,
-              category: source.category,
+              category: autoCategory, // Use auto-detected category
               scrapedAt: new Date(),
             });
           }
