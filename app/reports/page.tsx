@@ -3,12 +3,20 @@
 import { useEffect, useState } from 'react';
 import { Box, VStack, Heading, Text, Badge, HStack, Link, Spinner, Center, Grid, GridItem } from '@chakra-ui/react';
 
+interface TopArticle {
+  title: string;
+  link: string;
+  reason: string;
+  institution: string;
+}
+
 interface DailyReport {
   date: string;
   summary: string;
   categoryBreakdown: Record<string, number>;
   topInstitutions: string[];
   keyTopics: string[];
+  topArticlesByCategory: Record<string, TopArticle>;
   articles: {
     title: string;
     link: string;
@@ -117,6 +125,40 @@ export default function ReportsPage() {
               </Box>
             </Grid>
 
+            {/* Top Articles per Category */}
+            {Object.keys(todayReport.topArticlesByCategory).length > 0 && (
+              <Box mb={6} pb={6} borderBottom="1px" borderColor="gray.200">
+                <Heading size="sm" mb={4} color="gray.900">
+                  ⭐ Top Articles by Category
+                </Heading>
+                <VStack gap={3} align="stretch">
+                  {Object.entries(todayReport.topArticlesByCategory).map(([category, article]) => (
+                    <Box key={category} bg="gray.50" p={4} borderRadius="md" borderLeft="4px" borderLeftColor="red.500">
+                      <HStack justify="space-between" mb={2} align="flex-start">
+                        <Badge colorScheme="red">{category}</Badge>
+                        <Text fontSize="xs" color="gray.600">
+                          {article.institution}
+                        </Text>
+                      </HStack>
+                      <Link
+                        href={article.link}
+                        isExternal
+                        color="blue.600"
+                        fontSize="sm"
+                        fontWeight="bold"
+                        _hover={{ textDecoration: 'underline' }}
+                      >
+                        {article.title} ↗
+                      </Link>
+                      <Text fontSize="xs" color="gray.600" mt={2} fontStyle="italic">
+                        💡 {article.reason}
+                      </Text>
+                    </Box>
+                  ))}
+                </VStack>
+              </Box>
+            )}
+
             {/* Category Breakdown */}
             {Object.keys(todayReport.categoryBreakdown).length > 0 && (
               <Box mb={6}>
@@ -151,7 +193,7 @@ export default function ReportsPage() {
 
             {/* Top Institutions */}
             {todayReport.topInstitutions.length > 0 && (
-              <Box mb={6}>
+              <Box>
                 <Heading size="sm" mb={3} color="gray.900">
                   🏢 Top Publishers
                 </Heading>
@@ -161,38 +203,6 @@ export default function ReportsPage() {
                       {idx + 1}. {institution}
                     </Text>
                   ))}
-                </VStack>
-              </Box>
-            )}
-
-            {/* Articles */}
-            {todayReport.articles.length > 0 && (
-              <Box pt={4} borderTop="1px" borderColor="gray.200">
-                <Heading size="sm" mb={3} color="gray.900">
-                  📚 Featured Articles
-                </Heading>
-                <VStack align="start" gap={2}>
-                  {todayReport.articles.slice(0, 8).map((article, idx) => (
-                    <HStack key={idx} gap={2} w="full" align="flex-start">
-                      <Badge colorScheme="blue" flexShrink={0} fontSize="xs">
-                        {article.category}
-                      </Badge>
-                      <Link
-                        href={article.link}
-                        isExternal
-                        color="blue.600"
-                        fontSize="sm"
-                        _hover={{ textDecoration: 'underline' }}
-                      >
-                        {article.title.substring(0, 60)}... ↗
-                      </Link>
-                    </HStack>
-                  ))}
-                  {todayReport.articles.length > 8 && (
-                    <Text color="gray.500" fontSize="xs">
-                      +{todayReport.articles.length - 8} more articles...
-                    </Text>
-                  )}
                 </VStack>
               </Box>
             )}
@@ -232,6 +242,34 @@ export default function ReportsPage() {
               <Text color="gray.700" fontSize="sm" mb={3} lineHeight="1.5">
                 {report.summary}
               </Text>
+
+              {Object.keys(report.topArticlesByCategory).length > 0 && (
+                <Box mb={3} pb={3} borderBottom="1px" borderColor="gray.200">
+                  <Text fontSize="xs" fontWeight="bold" color="gray.600" mb={2}>
+                    ⭐ HIGHLIGHTS:
+                  </Text>
+                  <VStack align="start" gap={1}>
+                    {Object.entries(report.topArticlesByCategory)
+                      .slice(0, 3)
+                      .map(([category, article]) => (
+                        <HStack key={category} gap={2} align="flex-start">
+                          <Badge colorScheme="red" fontSize="xs">
+                            {category}
+                          </Badge>
+                          <Link
+                            href={article.link}
+                            isExternal
+                            color="blue.600"
+                            fontSize="xs"
+                            _hover={{ textDecoration: 'underline' }}
+                          >
+                            {article.title.substring(0, 50)}... ↗
+                          </Link>
+                        </HStack>
+                      ))}
+                  </VStack>
+                </Box>
+              )}
 
               {Object.keys(report.categoryBreakdown).length > 0 && (
                 <HStack gap={2} flexWrap="wrap">
