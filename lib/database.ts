@@ -5,10 +5,16 @@ let client: any = null;
 
 async function getRedisClient() {
   if (!client) {
-    client = createClient({
-      url: process.env.REDIS_URL,
-    });
-    await client.connect();
+    try {
+      client = createClient({
+        url: process.env.REDIS_URL,
+      });
+      await client.connect();
+      console.log('✅ Redis connected');
+    } catch (error) {
+      console.error('❌ Redis connection failed:', error);
+      throw error;
+    }
   }
   return client;
 }
@@ -53,7 +59,7 @@ export class Database {
         limit,
       };
     } catch (error) {
-      console.error('Redis error:', error);
+      console.error('❌ Error reading articles:', error);
       return { articles: [], total: 0, page: 1, limit: 20 };
     }
   }
@@ -77,9 +83,10 @@ export class Database {
       );
       const limited = sorted.slice(0, 1000);
 
-      await redis.setEx('articles', 30 * 24 * 60 * 60, JSON.stringify(limited)); // 30 days
+      await redis.setEx('articles', 30 * 24 * 60 * 60, JSON.stringify(limited));
+      console.log(`✅ Saved ${limited.length} articles to Redis`);
     } catch (error) {
-      console.error('Error saving articles:', error);
+      console.error('❌ Error saving articles:', error);
     }
   }
 
@@ -96,6 +103,7 @@ export class Database {
         lastUpdated: articles.length > 0 ? articles[0].scrapedAt : null,
       };
     } catch (error) {
+      console.error('❌ Error getting stats:', error);
       return { totalArticles: 0, sources: 0, categories: 0, lastUpdated: null };
     }
   }
