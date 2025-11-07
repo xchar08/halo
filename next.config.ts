@@ -7,7 +7,12 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: '**',
       },
+      {
+        protocol: 'http',
+        hostname: '**',
+      },
     ],
+    unoptimized: true, // Use this if you have issues with external images
   },
 };
 

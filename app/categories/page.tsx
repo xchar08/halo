@@ -21,21 +21,25 @@ export default function CategoriesPage() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
   const loadArticles = async (category: string, pageNum: number = 1) => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/articles?category=${category}&page=${pageNum}&limit=20`);
+      const response = await fetch(`/api/articles?category=${encodeURIComponent(category)}&page=${pageNum}&limit=20`);
       const data = await response.json();
-      
+
       if (pageNum === 1) {
         setArticles(data.articles || []);
       } else {
         setArticles((prev) => [...prev, ...(data.articles || [])]);
       }
       setPage(pageNum);
+      setHasMore(data.hasMore || false);
     } catch (error) {
       console.error('Error loading articles:', error);
+      setArticles([]);
+      setHasMore(false);
     } finally {
       setLoading(false);
     }
@@ -92,7 +96,7 @@ export default function CategoriesPage() {
                   {categoryData.name}
                 </Heading>
                 <Text color="gray.600" fontSize="sm">
-                  {articles.length} articles found
+                  {loading && page === 1 ? 'Loading...' : `${articles.length} articles found`}
                 </Text>
               </VStack>
             </HStack>
@@ -113,17 +117,19 @@ export default function CategoriesPage() {
             </Grid>
 
             {/* Load More Button */}
-            <Center>
-              <Button
-                onClick={() => loadArticles(selectedCategory, page + 1)}
-                isLoading={loading}
-                colorScheme="red"
-                variant="outline"
-                size="lg"
-              >
-                Load More Articles
-              </Button>
-            </Center>
+            {hasMore && (
+              <Center>
+                <Button
+                  onClick={() => loadArticles(selectedCategory, page + 1)}
+                  isLoading={loading}
+                  colorScheme="red"
+                  variant="outline"
+                  size="lg"
+                >
+                  Load More Articles
+                </Button>
+              </Center>
+            )}
           </>
         ) : (
           <Center py={20}>
