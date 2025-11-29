@@ -1,10 +1,9 @@
-import { createRxDatabase, addRxPlugin, RxDatabase, RxCollection, RxStorage } from 'rxdb'; // Add RxStorage to imports
+import { createRxDatabase, addRxPlugin, RxDatabase, RxCollection, RxStorage } from 'rxdb';
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
 import { docSchema, citationSchema, RxDocumentType, RxCitationType } from './schema';
 import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 
-// Enable Dev Mode Plugin in Development
 if (process.env.NODE_ENV === 'development') {
     import('rxdb/plugins/dev-mode').then(({ RxDBDevModePlugin }) => {
         addRxPlugin(RxDBDevModePlugin);
@@ -38,17 +37,14 @@ export async function getDatabase(): Promise<HaloDatabase> {
 async function _create(): Promise<HaloDatabase> {
   console.log("Creating RxDB...");
 
-  // --- FIX: Explicit type annotation for storage ---
   let storage: RxStorage<any, any> = getRxStorageDexie();
   
   if (process.env.NODE_ENV === 'development') {
-      storage = wrappedValidateAjvStorage({
-          storage: storage
-      });
+      storage = wrappedValidateAjvStorage({ storage });
   }
   
   const db = await createRxDatabase<HaloDatabaseCollections>({
-    name: 'halo_research_db',
+    name: 'halo_research_db_v2', // UPDATED: Bump version to fix DB9 schema errors
     storage: storage,
     ignoreDuplicate: true,
   });
