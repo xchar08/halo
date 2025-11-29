@@ -4,14 +4,16 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
 import { ResearchFeed } from "@/components/research/ResearchFeed";
+import { GlobalFeed } from "@/components/research/GlobalFeed"; // NEW IMPORT
 import { GraphControls } from "@/components/visualizer/GraphControls";
 import { NodeDetailPanel } from "@/components/research/NodeDetailPanel"; 
-import { ReportView } from "@/components/research/ReportView"; // Ensure this is imported
+import { ReportView } from "@/components/research/ReportView"; 
 import { getDatabase, HaloDatabase } from "@/lib/rxdb/db"; 
 import { startSync } from "@/lib/rxdb/sync";
 import { useGraphStore } from "@/store/graph-store";
 import { getGraphSnapshot } from "@/app/actions/graph";
 import { createClient } from "@/lib/supabase/client"; 
+import { Activity, Globe } from "lucide-react"; // Icons for sidebar
 
 const CosmographWrapper = dynamic(
   () => import("@/components/visualizer/CosmographWrapper"),
@@ -24,7 +26,10 @@ export default function ProjectPage() {
   const params = useParams();
   const projectId = params.id as string;
   const { setGraphData } = useGraphStore();
-  const [activeTab, setActiveTab] = useState("graph"); // TAB STATE
+  
+  // View State
+  const [activeTab, setActiveTab] = useState("graph"); 
+  const [sidebarTab, setSidebarTab] = useState<"agent" | "global">("agent"); // NEW SIDEBAR STATE
 
   useEffect(() => {
     let mounted = true;
@@ -34,17 +39,10 @@ export default function ProjectPage() {
     const init = async () => {
       try {
           console.log("Initializing Project Page...");
-
-          // 1. Initial Snapshot
           const snapshot = await getGraphSnapshot(projectId);
-          if (mounted) {
-              console.log(`Loaded snapshot: ${snapshot.nodes.length} nodes`);
-              setGraphData(snapshot.nodes, snapshot.edges);
-          }
+          if (mounted) setGraphData(snapshot.nodes, snapshot.edges);
 
-          // 2. RxDB
           if (!dbInstance) {
-             console.log("Creating RxDB Singleton...");
              dbInstance = await getDatabase();
              await startSync(dbInstance.documents, dbInstance.citations);
           }
@@ -55,27 +53,10 @@ export default function ProjectPage() {
 
     init();
 
-    // 3. REALTIME REFRESH (Your working logic)
     const channel = supabase.channel(`project-${projectId}`)
-        .on(
-            'postgres_changes',
-            { 
-                event: 'INSERT', 
-                schema: 'public', 
-                table: 'documents', 
-                filter: `project_id=eq.${projectId}` 
-            },
-            (payload) => {
-                console.log("Realtime: New Document Inserted!", payload);
-                getGraphSnapshot(projectId).then(snapshot => {
-                    if (mounted) {
-                        console.log("Refreshed Graph from Realtime Event");
-                        setGraphData(snapshot.nodes, snapshot.edges);
-                    }
-                });
-            }
-        )
-        .subscribe();
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'documents', filter: `project_id=eq.${projectId}` },
+            () => getGraphSnapshot(projectId).then(s => mounted && setGraphData(s.nodes, s.edges))
+        ).subscribe();
 
     return () => {
         mounted = false;
@@ -87,62 +68,48 @@ export default function ProjectPage() {
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-zinc-950 text-zinc-50">
       
-      {/* Main Content Area */}
+      {/* Main Content */}
       <div className="flex-1 relative h-full flex flex-col">
-        
-        {/* Tab Navigation (Top Overlay) */}
+        {/* Top Tabs */}
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
             <div className="bg-zinc-900/90 backdrop-blur border border-zinc-800 p-1 rounded-lg flex gap-1 shadow-xl">
-                <button 
-                    onClick={() => setActiveTab("graph")}
-                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                        activeTab === "graph" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-400 hover:text-zinc-200"
-                    }`}
-                >
-                    Graph View
-                </button>
-                <button 
-                    onClick={() => setActiveTab("report")}
-                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                        activeTab === "report" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-400 hover:text-zinc-200"
-                    }`}
-                >
-                    Final Report
-                </button>
+                <button onClick={() => setActiveTab("graph")} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === "graph" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-400 hover:text-zinc-200"}`}>Graph View</button>
+                <button onClick={() => setActiveTab("report")} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === "report" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-400 hover:text-zinc-200"}`}>Final Report</button>
             </div>
         </div>
 
-        {/* View Container */}
+        {/* Views */}
         <div className="flex-1 relative w-full h-full">
-            
-            {/* 1. Graph View */}
             <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'graph' ? 'opacity-100 z-10 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'}`}>
                 <CosmographWrapper />
-                <div className="absolute bottom-4 left-4 z-20">
-                    <GraphControls />
-                </div>
+                <div className="absolute bottom-4 left-4 z-20"><GraphControls /></div>
                 <NodeDetailPanel />
             </div>
-
-            {/* 2. Report View */}
             <div className={`absolute inset-0 bg-zinc-950 transition-opacity duration-300 ${activeTab === 'report' ? 'opacity-100 z-20 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'}`}>
                 <ReportView projectId={projectId} />
             </div>
-
         </div>
       </div>
 
-      {/* Sidebar (Right Panel) */}
+      {/* Sidebar (Right Panel) - UPDATED WITH TABS */}
       <div className="w-[400px] border-l border-zinc-800 bg-zinc-950/95 backdrop-blur z-30 flex flex-col h-full shadow-xl">
-        <div className="p-4 border-b border-zinc-800 flex justify-between items-center">
-            <div>
-                <h1 className="font-bold text-lg text-zinc-100">Research Intelligence</h1>
-                <p className="text-xs text-zinc-500">Realtime Graph & Agent Feed</p>
-            </div>
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" title="System Active" />
+        <div className="p-2 border-b border-zinc-800 flex gap-1 bg-zinc-900/50">
+            <button 
+                onClick={() => setSidebarTab("agent")}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-medium rounded-md transition-colors ${sidebarTab === 'agent' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+            >
+                <Activity className="h-3.5 w-3.5" /> Agent Logs
+            </button>
+            <button 
+                onClick={() => setSidebarTab("global")}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-medium rounded-md transition-colors ${sidebarTab === 'global' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+            >
+                <Globe className="h-3.5 w-3.5" /> Global Feed
+            </button>
         </div>
-        <div className="flex-1 overflow-hidden">
-            <ResearchFeed />
+        
+        <div className="flex-1 overflow-hidden relative">
+            {sidebarTab === 'agent' ? <ResearchFeed /> : <GlobalFeed />}
         </div>
       </div>
     </div>
