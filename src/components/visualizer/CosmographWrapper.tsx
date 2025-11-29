@@ -57,23 +57,17 @@ export default function CosmographWrapper({ children }: CosmographWrapperProps) 
             const category = meta.category;
             const tags = meta.tags || [];
 
-            // A. Categories
-            if (category === 'industry') return "#ef4444"; // Red
-            if (category === 'university') return "#10b981"; // Green
-            if (category === 'government') return "#3b82f6"; // Blue
-            if (category === 'startup') return "#a855f7"; // Purple
-            if (category === 'github') return "#ffffff"; // White
+            if (category === 'industry') return "#ef4444";
+            if (category === 'university') return "#10b981";
+            if (category === 'government') return "#3b82f6";
+            if (category === 'startup') return "#a855f7";
+            if (category === 'github') return "#ffffff";
 
-            // B. Tags
             const tagStr = tags.join(" ").toLowerCase();
-            if (tagStr.includes("llm") || tagStr.includes("transformer")) return "#f472b6"; 
-            if (tagStr.includes("vision") || tagStr.includes("image")) return "#60a5fa"; 
-            if (tagStr.includes("robotics") || tagStr.includes("agent")) return "#fb923c"; 
-
-            // C. Fallback
-            if (nodes.length > 0 && n.id === nodes[0].id) return "#fbbf24"; 
-            const score = data?.math_density_score || 0;
-            if (score > 0.6) return "#facc15"; 
+            if (tagStr.includes("llm")) return "#f472b6";
+            if (tagStr.includes("vision")) return "#60a5fa";
+            
+            if (nodes.length > 0 && n.id === nodes[0].id) return "#fbbf24";
             
             return "#22d3ee"; 
         }}
@@ -99,7 +93,6 @@ export default function CosmographWrapper({ children }: CosmographWrapperProps) 
         }}
       />
       
-      {/* RENDER CHILDREN OVERLAY */}
       <div className="absolute inset-0 pointer-events-none">
           {children}
       </div>
