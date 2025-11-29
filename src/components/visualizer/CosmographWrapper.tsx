@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, ReactNode } from "react";
 import { Cosmograph, CosmographRef } from "@cosmograph/react";
 import { useGraphStore } from "@/store/graph-store";
 import { GraphNode, GraphEdge } from "@/types/graph";
 
-export default function CosmographWrapper() {
+interface CosmographWrapperProps {
+    children?: ReactNode;
+}
+
+export default function CosmographWrapper({ children }: CosmographWrapperProps) {
   const cosmographRef = useRef<CosmographRef<GraphNode, GraphEdge>>(null);
   
   const nodes = useGraphStore((state) => state.nodes);
@@ -38,7 +42,7 @@ export default function CosmographWrapper() {
   }, [nodes.length]);
 
   return (
-    <div className="h-full w-full bg-black cursor-crosshair">
+    <div className="h-full w-full bg-black cursor-crosshair relative">
       <Cosmograph
         ref={cosmographRef}
         nodes={nodes}
@@ -46,32 +50,32 @@ export default function CosmographWrapper() {
         
         backgroundColor="#000000"
         
-        // --- DYNAMIC COLORING (The "Brain" Visuals) ---
+        // --- DYNAMIC COLORING ---
         nodeColor={(n) => {
             const data = n.data as any;
             const meta = data?.metadata || {};
             const category = meta.category;
             const tags = meta.tags || [];
 
-            // A. Knowledge Base Categories (Highest Priority)
-            if (category === 'industry') return "#ef4444"; // Red (Corporate)
-            if (category === 'university') return "#10b981"; // Green (Academic)
-            if (category === 'government') return "#3b82f6"; // Blue (Official)
-            if (category === 'startup') return "#a855f7"; // Purple (Innovation)
-            if (category === 'github') return "#ffffff"; // White (Code)
+            // A. Categories
+            if (category === 'industry') return "#ef4444"; // Red
+            if (category === 'university') return "#10b981"; // Green
+            if (category === 'government') return "#3b82f6"; // Blue
+            if (category === 'startup') return "#a855f7"; // Purple
+            if (category === 'github') return "#ffffff"; // White
 
-            // B. Ontology Tags (Auto-Tagged)
+            // B. Tags
             const tagStr = tags.join(" ").toLowerCase();
-            if (tagStr.includes("llm") || tagStr.includes("transformer")) return "#f472b6"; // Pink
-            if (tagStr.includes("vision") || tagStr.includes("image")) return "#60a5fa"; // Light Blue
-            if (tagStr.includes("robotics") || tagStr.includes("agent")) return "#fb923c"; // Orange
+            if (tagStr.includes("llm") || tagStr.includes("transformer")) return "#f472b6"; 
+            if (tagStr.includes("vision") || tagStr.includes("image")) return "#60a5fa"; 
+            if (tagStr.includes("robotics") || tagStr.includes("agent")) return "#fb923c"; 
 
-            // C. Fallback Heuristics
-            if (nodes.length > 0 && n.id === nodes[0].id) return "#fbbf24"; // Seed = Amber
+            // C. Fallback
+            if (nodes.length > 0 && n.id === nodes[0].id) return "#fbbf24"; 
             const score = data?.math_density_score || 0;
-            if (score > 0.6) return "#facc15"; // High Math = Gold
+            if (score > 0.6) return "#facc15"; 
             
-            return "#22d3ee"; // Default = Cyan
+            return "#22d3ee"; 
         }}
         
         nodeLabelAccessor={(n) => n.label}
@@ -94,6 +98,11 @@ export default function CosmographWrapper() {
             else cosmographRef.current?.unselectNodes();
         }}
       />
+      
+      {/* RENDER CHILDREN OVERLAY */}
+      <div className="absolute inset-0 pointer-events-none">
+          {children}
+      </div>
     </div>
   );
 }
