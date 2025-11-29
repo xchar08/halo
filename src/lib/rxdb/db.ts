@@ -1,10 +1,9 @@
-import { createRxDatabase, addRxPlugin, RxDatabase, RxCollection, RxStorage } from 'rxdb'; // Removed getRxDatabase
+import { createRxDatabase, addRxPlugin, RxDatabase, RxCollection, RxStorage } from 'rxdb';
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
 import { docSchema, citationSchema, RxDocumentType, RxCitationType } from './schema';
 import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 
-// Plugins
 addRxPlugin(RxDBUpdatePlugin);
 if (process.env.NODE_ENV === 'development') {
     import('rxdb/plugins/dev-mode').then(({ RxDBDevModePlugin }) => addRxPlugin(RxDBDevModePlugin));
@@ -18,22 +17,35 @@ export type HaloDatabaseCollections = {
 };
 export type HaloDatabase = RxDatabase<HaloDatabaseCollections>;
 
-// DATABASE NAME
-const DB_NAME = 'halo_research_db_v3'; 
+// NAME
+const DB_NAME = 'halo_research_db_v4'; // Bump again to be safe
 
-// SINGLETON HOLDER
-let dbPromise: Promise<HaloDatabase> | null = null;
+// GLOBAL WINDOW TYPE
+declare global {
+    interface Window {
+        _haloRxDBPromise: Promise<HaloDatabase> | undefined;
+    }
+}
 
 export async function getDatabase(): Promise<HaloDatabase> {
-  if (dbPromise) return dbPromise;
+  // 1. Check Window Global (True Singleton)
+  if (typeof window !== 'undefined' && window._haloRxDBPromise) {
+      return window._haloRxDBPromise;
+  }
 
-  // Start creation
-  dbPromise = _create();
-  return dbPromise;
+  // 2. Create if missing
+  const promise = _create();
+  
+  // 3. Attach to Window immediately
+  if (typeof window !== 'undefined') {
+      window._haloRxDBPromise = promise;
+  }
+  
+  return promise;
 }
 
 async function _create(): Promise<HaloDatabase> {
-  console.log("Init RxDB...");
+  console.log("Creating RxDB Instance...");
 
   let storage: RxStorage<any, any> = getRxStorageDexie();
   if (process.env.NODE_ENV === 'development') {
@@ -43,8 +55,8 @@ async function _create(): Promise<HaloDatabase> {
   const db = await createRxDatabase<HaloDatabaseCollections>({
     name: DB_NAME,
     storage: storage,
-    ignoreDuplicate: true, // Important for React StrictMode
-    multiInstance: true,   // Important for multiple tabs
+    ignoreDuplicate: true, 
+    multiInstance: true,   
   });
 
   await db.addCollections({
