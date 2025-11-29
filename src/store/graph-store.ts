@@ -1,0 +1,30 @@
+import { create } from 'zustand';
+import { GraphNode, GraphEdge } from '@/types/graph';
+
+interface GraphState {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  selectedNodeId: string | null;
+  
+  // NEW: Simulation Controls
+  isPaused: boolean;
+  resetTrigger: number; // Increment this to trigger a reset
+
+  setGraphData: (nodes: GraphNode[], edges: GraphEdge[]) => void;
+  setSelectedNode: (nodeId: string | null) => void;
+  togglePause: () => void;
+  triggerReset: () => void;
+}
+
+export const useGraphStore = create<GraphState>((set) => ({
+  nodes: [],
+  edges: [],
+  selectedNodeId: null,
+  isPaused: false,
+  resetTrigger: 0,
+
+  setGraphData: (nodes, edges) => set({ nodes, edges }),
+  setSelectedNode: (nodeId) => set({ selectedNodeId: nodeId }),
+  togglePause: () => set((state) => ({ isPaused: !state.isPaused })),
+  triggerReset: () => set((state) => ({ resetTrigger: state.resetTrigger + 1 })),
+}));
