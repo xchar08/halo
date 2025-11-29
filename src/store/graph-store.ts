@@ -6,13 +6,14 @@ interface GraphState {
   edges: GraphEdge[];
   selectedNodeId: string | null;
   
-  // NEW: Simulation Controls
+  // Simulation Controls
   isPaused: boolean;
-  resetTrigger: number; // Increment this to trigger a reset
+  resetTrigger: number; 
 
   setGraphData: (nodes: GraphNode[], edges: GraphEdge[]) => void;
   setSelectedNode: (nodeId: string | null) => void;
   togglePause: () => void;
+  setIsPaused: (paused: boolean) => void; // ADDED
   triggerReset: () => void;
 }
 
@@ -26,5 +27,6 @@ export const useGraphStore = create<GraphState>((set) => ({
   setGraphData: (nodes, edges) => set({ nodes, edges }),
   setSelectedNode: (nodeId) => set({ selectedNodeId: nodeId }),
   togglePause: () => set((state) => ({ isPaused: !state.isPaused })),
+  setIsPaused: (paused) => set({ isPaused: paused }), // ADDED
   triggerReset: () => set((state) => ({ resetTrigger: state.resetTrigger + 1 })),
 }));
