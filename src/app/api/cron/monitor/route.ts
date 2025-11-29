@@ -2,57 +2,57 @@ import { NextResponse } from "next/server";
 import { monitorSources } from "@/lib/agents/nodes/monitor-sources";
 import { createClient } from "@/lib/supabase/server";
 
-export const maxDuration = 300; // 5 minutes (Requires Vercel Pro) - or split logic
+// Force dynamic (don't cache)
+export const dynamic = 'force-dynamic'; 
+// Attempt to set max duration, though Hobby caps at 10-60s anyway
+export const maxDuration = 60; 
 
 export async function GET(req: Request) {
-  console.log("[Cron] Starting Dynamic Project Update...");
+  // Basic Security (optional for Hobby, but good practice)
+  const authHeader = req.headers.get('authorization');
+  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      // return new NextResponse('Unauthorized', { status: 401 });
+  }
+
+  console.log("[Cron] Starting Hobby-Optimized Monitor...");
   const supabase = await createClient();
 
   try {
-    // 1. Find 'Active' Projects (e.g. created/updated in last 7 days)
-    // Limit to 3-5 to avoid timeout
-    const { data: activeProjects } = await supabase
+    // 1. LIMIT TO 1 PROJECT (To fit in 10s-60s timeout)
+    // We fetch the single most recently updated project
+    const { data: recentProject } = await supabase
         .from('projects')
         .select('id, name, raw_spec, settings')
         .order('created_at', { ascending: false })
-        .limit(3);
+        .limit(1)
+        .single();
 
-    if (!activeProjects || activeProjects.length === 0) {
-        return NextResponse.json({ message: "No active projects to update." });
+    if (!recentProject) {
+        return NextResponse.json({ message: "No projects found." });
     }
 
-    const results = [];
+    console.log(`[Cron] Updating Single Target: ${recentProject.name}`);
 
-    // 2. Run Monitor for EACH project context
-    for (const project of activeProjects) {
-        console.log(`[Cron] Updating Project: ${project.name} (${project.id})`);
+    // 2. Prepare State
+    const state: any = {
+        projectId: recentProject.id,
+        query: recentProject.raw_spec, 
+        seedPapers: [] 
+    };
 
-        // Mock state for this specific project
-        // Note: monitorSources uses the project ID to save documents
-        const state: any = {
-            projectId: project.id,
-            query: project.raw_spec, 
-            seedPapers: [] 
-        };
-
-        // Trigger the scan
-        // This will save new docs specifically to THIS project's ID
-        // So when you open the project page, new nodes appear.
-        const outcome = await monitorSources(state);
+    // 3. Run Monitor
+    // This function picks 2 random sources. It should finish in ~15-20s.
+    // If it consistently times out, reduce the loop inside monitorSources to 1 source.
+    const outcome = await monitorSources(state);
         
-        results.push({ 
-            project: project.name, 
-            new_docs: outcome.logs?.filter(l => l.message.includes("Ingested")).length || 0 
-        });
-    }
-
     return NextResponse.json({ 
         success: true, 
-        updates: results 
+        project: recentProject.name,
+        new_docs: outcome.logs?.filter(l => l.message.includes("Ingested")).length || 0 
     });
 
   } catch (error: any) {
-    console.error("[Cron] Dynamic Monitor Failed:", error);
+    console.error("[Cron] Failed:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
