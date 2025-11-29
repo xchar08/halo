@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
 import { ResearchFeed } from "@/components/research/ResearchFeed";
-import { GlobalFeed } from "@/components/research/GlobalFeed"; // NEW IMPORT
+import { GlobalFeed } from "@/components/research/GlobalFeed";
 import { GraphControls } from "@/components/visualizer/GraphControls";
 import { NodeDetailPanel } from "@/components/research/NodeDetailPanel"; 
 import { ReportView } from "@/components/research/ReportView"; 
@@ -13,7 +13,7 @@ import { startSync } from "@/lib/rxdb/sync";
 import { useGraphStore } from "@/store/graph-store";
 import { getGraphSnapshot } from "@/app/actions/graph";
 import { createClient } from "@/lib/supabase/client"; 
-import { Activity, Globe } from "lucide-react"; // Icons for sidebar
+import { Activity, Globe } from "lucide-react";
 
 const CosmographWrapper = dynamic(
   () => import("@/components/visualizer/CosmographWrapper"),
@@ -27,9 +27,8 @@ export default function ProjectPage() {
   const projectId = params.id as string;
   const { setGraphData } = useGraphStore();
   
-  // View State
   const [activeTab, setActiveTab] = useState("graph"); 
-  const [sidebarTab, setSidebarTab] = useState<"agent" | "global">("agent"); // NEW SIDEBAR STATE
+  const [sidebarTab, setSidebarTab] = useState<"agent" | "global">("agent");
 
   useEffect(() => {
     let mounted = true;
@@ -81,17 +80,25 @@ export default function ProjectPage() {
         {/* Views */}
         <div className="flex-1 relative w-full h-full">
             <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'graph' ? 'opacity-100 z-10 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'}`}>
-                <CosmographWrapper />
-                <div className="absolute bottom-4 left-4 z-20"><GraphControls /></div>
+                
+                {/* NEST CONTROLS INSIDE WRAPPER */}
+                <CosmographWrapper>
+                    <div className="absolute bottom-4 left-4 z-20 pointer-events-auto">
+                        <GraphControls />
+                    </div>
+                </CosmographWrapper>
+
                 <NodeDetailPanel />
             </div>
+            
+            {/* Report View */}
             <div className={`absolute inset-0 bg-zinc-950 transition-opacity duration-300 ${activeTab === 'report' ? 'opacity-100 z-20 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'}`}>
                 <ReportView projectId={projectId} />
             </div>
         </div>
       </div>
 
-      {/* Sidebar (Right Panel) - UPDATED WITH TABS */}
+      {/* Sidebar (Right Panel) */}
       <div className="w-[400px] border-l border-zinc-800 bg-zinc-950/95 backdrop-blur z-30 flex flex-col h-full shadow-xl">
         <div className="p-2 border-b border-zinc-800 flex gap-1 bg-zinc-900/50">
             <button 
