@@ -1,52 +1,50 @@
-import { createRxDatabase, addRxPlugin, RxDatabase, RxCollection, RxStorage } from 'rxdb';
+import { createRxDatabase, addRxPlugin, RxDatabase, RxCollection, RxStorage } from 'rxdb'; // Removed getRxDatabase
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
 import { docSchema, citationSchema, RxDocumentType, RxCitationType } from './schema';
 import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 
-if (process.env.NODE_ENV === 'development') {
-    import('rxdb/plugins/dev-mode').then(({ RxDBDevModePlugin }) => {
-        addRxPlugin(RxDBDevModePlugin);
-    });
-}
-
+// Plugins
 addRxPlugin(RxDBUpdatePlugin);
+if (process.env.NODE_ENV === 'development') {
+    import('rxdb/plugins/dev-mode').then(({ RxDBDevModePlugin }) => addRxPlugin(RxDBDevModePlugin));
+}
 
 export type DocumentCollection = RxCollection<RxDocumentType>;
 export type CitationCollection = RxCollection<RxCitationType>;
-
 export type HaloDatabaseCollections = {
   documents: DocumentCollection;
   citations: CitationCollection;
 };
-
 export type HaloDatabase = RxDatabase<HaloDatabaseCollections>;
 
-const globalForRxDB = global as unknown as { rxdb: HaloDatabase | undefined };
+// DATABASE NAME
+const DB_NAME = 'halo_research_db_v3'; 
+
+// SINGLETON HOLDER
+let dbPromise: Promise<HaloDatabase> | null = null;
 
 export async function getDatabase(): Promise<HaloDatabase> {
-  if (globalForRxDB.rxdb) return globalForRxDB.rxdb;
+  if (dbPromise) return dbPromise;
 
-  if (!(global as any)._rxdbCreationPromise) {
-      (global as any)._rxdbCreationPromise = _create();
-  }
-  
-  return (global as any)._rxdbCreationPromise;
+  // Start creation
+  dbPromise = _create();
+  return dbPromise;
 }
 
 async function _create(): Promise<HaloDatabase> {
-  console.log("Creating RxDB...");
+  console.log("Init RxDB...");
 
   let storage: RxStorage<any, any> = getRxStorageDexie();
-  
   if (process.env.NODE_ENV === 'development') {
       storage = wrappedValidateAjvStorage({ storage });
   }
-  
+
   const db = await createRxDatabase<HaloDatabaseCollections>({
-    name: 'halo_research_db_v2', // UPDATED: Bump version to fix DB9 schema errors
+    name: DB_NAME,
     storage: storage,
-    ignoreDuplicate: true,
+    ignoreDuplicate: true, // Important for React StrictMode
+    multiInstance: true,   // Important for multiple tabs
   });
 
   await db.addCollections({
@@ -54,6 +52,5 @@ async function _create(): Promise<HaloDatabase> {
     citations: { schema: citationSchema },
   });
 
-  globalForRxDB.rxdb = db;
   return db;
 }
