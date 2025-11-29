@@ -13,33 +13,20 @@ export type HaloDatabaseCollections = {
 };
 export type HaloDatabase = RxDatabase<HaloDatabaseCollections>;
 
-// NUCLEAR FIX: Randomize DB name on every load
-// This guarantees no "Version Mismatch" or "DB Locked" errors.
-const DB_NAME = `halo_db_${Math.random().toString(36).substring(7)}`; 
+// REMOVED GLOBAL CACHE LOGIC completely. 
+// We will create a fresh DB every time this function is called.
 
-// Global Cache
-declare global {
-    var _haloRxDBPromise: Promise<HaloDatabase> | undefined;
-}
-
-export async function getDatabase(): Promise<HaloDatabase> {
+export async function createEphemeralDatabase(): Promise<HaloDatabase> {
   if (typeof window === 'undefined') throw new Error("RxDB is client-side only");
 
-  if (globalThis._haloRxDBPromise) {
-      return globalThis._haloRxDBPromise;
-  }
-
-  globalThis._haloRxDBPromise = _create();
-  return globalThis._haloRxDBPromise;
-}
-
-async function _create(): Promise<HaloDatabase> {
-  console.log(`Init RxDB (${DB_NAME})...`);
+  // Unique name every time to prevent DB9
+  const uniqueName = `halo_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  console.log(`Creating Ephemeral RxDB: ${uniqueName}`);
 
   const db = await createRxDatabase<HaloDatabaseCollections>({
-    name: DB_NAME,
+    name: uniqueName,
     storage: getRxStorageDexie(),
-    multiInstance: false, // No sharing needed for ephemeral DB
+    multiInstance: false, 
     ignoreDuplicate: true
   });
 
